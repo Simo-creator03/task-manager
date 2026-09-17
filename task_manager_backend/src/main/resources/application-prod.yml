@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: task_manager_backend
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      poolName: Hikari
+      connection-timeout: 180000
+      minimum-idle: 10
+      maximum-pool-size: 50
+      idle-timeout: 300000
+      max-lifetime: 900000
+      validation-timeout: 50000
+      leak-detection-threshold: 180000
+      auto-commit: false
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+  jpa:
+    open-in-view: false
+    database: MYSQL
+    hibernate:
+      ddl-auto: update
+      dialect: org.hibernate.dialect.MySQL5Dialect
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+
+logging:
+  level:
+    ROOT: INFO
+    com.zaxxer.hikari.HikariConfig: INFO
+    com.zaxxer.hikari: INFO
+
+server:
+  # Cloud Run impose le port via la variable PORT (8080 par defaut).
+  # En local, on garde 8081.
+  port: ${PORT:8081}
+  servlet:
+    session:
+      cookie:
+        http-only: true

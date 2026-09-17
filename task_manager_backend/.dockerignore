@@ -1,0 +1,7 @@
+# Fichiers exclus du contexte Docker (envoi plus rapide, cache plus efficace)
+target/
+.idea/
+*.iml
+.git/
+.gitignore
+HELP.md

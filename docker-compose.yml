@@ -1,0 +1,59 @@
+# ============================================================
+# DOCKER COMPOSE — test LOCAL des images de production
+#
+# Usage :
+#   docker compose up --build
+#
+#   - MySQL        : port 3306
+#   - Backend      : http://localhost:8081
+#   - Frontend     : http://localhost:5173
+#   - Compte de test : nelson / 12345
+#
+# Ce fichier sert uniquement à vérifier que les images Docker
+# fonctionnent avant de déployer sur GCP.
+# ============================================================
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: task_manager
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    ports:
+      # 13306 côté machine pour ne pas entrer en conflit avec un MySQL local.
+      - "13306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  backend:
+    build: ./task_manager_backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/task_manager?createDatabaseIfNotExist=true&useSSL=false&useUnicode=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+
+  frontend:
+    build:
+      context: ./task_manager_frontend
+      args:
+        # URL vue depuis le NAVIGATEUR (donc localhost, pas "backend").
+        VITE_API_URL: http://localhost:8081
+    depends_on:
+      - backend
+    ports:
+      - "5173:8080"
+
+volumes:
+  mysql-data:

@@ -1,0 +1,76 @@
+# ============================================================
+# CLOUDBUILD — DÉPLOIEMENT SUR CLOUD RUN
+#
+# Ce fichier ne construit PAS les images Docker : GitHub Actions
+# s'en charge et les pousse dans Artifact Registry. Cloud Build
+# ne fait ici que mettre à jour les deux services Cloud Run avec
+# les nouvelles images.
+#
+# Déclenché par GitHub Actions :
+#   gcloud builds submit --config cloudbuild.yaml --substitutions=... .
+#
+# Variables attendues (surchargées par GitHub Actions) :
+#   _BACKEND_IMAGE       image backend (tag = commit git)
+#   _FRONTEND_IMAGE      image frontend (tag = commit git)
+#   _REGION              région GCP (ex. europe-west1)
+#   _CLOUDSQL_INSTANCE   nom de connexion Cloud SQL : PROJET:REGION:INSTANCE
+#   _DB_NAME             nom de la base (ex. task_manager)
+#   _DB_USER             utilisateur MySQL (ex. task_manager)
+#
+# Le mot de passe n'est JAMAIS écrit ici : il est lu depuis
+# Secret Manager (secret "db-password").
+# ============================================================
+
+steps:
+
+  # ---------- Backend Spring Boot ----------
+  - id: 'deploy-backend'
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'task-manager-backend'
+      - '--image=${_BACKEND_IMAGE}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=2'
+      # Connexion Cloud SQL via socket Unix (sécurisé, sans IP publique).
+      - '--add-cloudsql-instances=${_CLOUDSQL_INSTANCE}'
+      - '--set-env-vars=SPRING_PROFILES_ACTIVE=prod,SPRING_DATASOURCE_USERNAME=${_DB_USER},SPRING_DATASOURCE_URL=jdbc:mysql:///${_DB_NAME}?cloudSqlInstance=${_CLOUDSQL_INSTANCE}&socketFactory=com.google.cloud.sql.mysql.SocketFactory&useSSL=false&serverTimezone=UTC'
+      - '--set-secrets=SPRING_DATASOURCE_PASSWORD=db-password:latest'
+
+  # ---------- Frontend React (nginx) ----------
+  - id: 'deploy-frontend'
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'task-manager-frontend'
+      - '--image=${_FRONTEND_IMAGE}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=256Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=2'
+
+# Valeurs par défaut (remplacées par GitHub Actions au moment de l'appel).
+substitutions:
+  _REGION: 'europe-west1'
+  _DB_NAME: 'task_manager'
+  _DB_USER: 'task_manager'
+  _CLOUDSQL_INSTANCE: 'mon-projet:europe-west1:task-manager-db'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'

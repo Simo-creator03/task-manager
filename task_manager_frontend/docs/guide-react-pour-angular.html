@@ -1,0 +1,734 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Task Manager — Comprendre le code React (guide pour débutant venant d'Angular)</title>
+<style>
+  @page { size: A4; margin: 17mm 15mm 18mm 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #24222e; font-size: 10.5pt; line-height: 1.55; margin: 0; }
+  h1 { font-size: 19pt; color: #4c1d95; border-bottom: 2px solid #7c3aed; padding-bottom: 6px; margin: 28px 0 12px; page-break-after: avoid; }
+  h2 { font-size: 14pt; color: #16141f; margin: 20px 0 8px; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; color: #4c1d95; margin: 14px 0 6px; page-break-after: avoid; }
+  p { margin: 6px 0; text-align: justify; }
+  ul, ol { margin: 6px 0 10px; padding-left: 20px; }
+  li { margin-bottom: 3px; }
+  code { font-family: Consolas, "Courier New", monospace; background: #f2f0f8; border: 1px solid #e4e1f0; border-radius: 4px; padding: 1px 4px; font-size: 9pt; color: #4c1d95; }
+  pre { background: #16141f; color: #ece9f7; border-radius: 8px; padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; margin: 8px 0; }
+  pre code { background: transparent; border: 0; color: inherit; padding: 0; font-size: 8.7pt; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; }
+  th { background: #4c1d95; color: #fff; text-align: left; padding: 6px 8px; font-size: 9.5pt; }
+  td { border: 1px solid #ddd9ea; padding: 6px 8px; vertical-align: top; font-size: 9.5pt; }
+  tr { page-break-inside: avoid; }
+  .cover { text-align: center; padding-top: 120px; page-break-after: always; }
+  .cover .badge { display: inline-block; background: #f2f0f8; color: #4c1d95; border: 1px solid #d8d3ec; border-radius: 999px; padding: 4px 14px; font-size: 9.5pt; font-weight: 600; margin-bottom: 18px; }
+  .cover h1 { border: 0; font-size: 29pt; margin: 0 0 10px; }
+  .cover .subtitle { font-size: 12.5pt; color: #4b4962; margin: 0 0 30px; }
+  .cover .meta { font-size: 10pt; color: #6b6880; line-height: 1.8; }
+  .callout { background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 8px 12px; border-radius: 6px; margin: 10px 0; page-break-inside: avoid; }
+  .callout--warn { background: #fff7ed; border-left-color: #ea580c; }
+  .callout--info { background: #eff6ff; border-left-color: #1d4ed8; }
+  .callout--ok { background: #f0fdf4; border-left-color: #15803d; }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+  .toc { page-break-after: always; }
+  .toc ol { padding-left: 22px; }
+  .toc li { margin-bottom: 5px; font-size: 10.5pt; }
+  .toc a { color: #4c1d95; text-decoration: none; }
+  .small { font-size: 9pt; color: #6b6880; }
+  .flow { background: #f8f7fc; border: 1px solid #e4e1f0; border-radius: 8px; padding: 12px 14px; font-family: Consolas, monospace; font-size: 8.6pt; line-height: 1.55; white-space: pre; page-break-inside: avoid; margin: 8px 0; }
+  .qa { margin: 10px 0; page-break-inside: avoid; }
+  .qa .q { font-weight: 700; color: #16141f; }
+  .qa .a { margin-top: 2px; }
+  .file { font-weight: 700; color: #16141f; }
+  .ok { color: #15803d; font-weight: 600; }
+  .no { color: #b91c1c; font-weight: 600; }
+  hr { border: 0; border-top: 1px solid #e4e1f0; margin: 22px 0; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="badge">Documentation — édition 2</div>
+  <h1>Task Manager — Comprendre le code React</h1>
+  <p class="subtitle">Guide pas à pas pour un développeur venant d'Angular<br>qui n'a jamais écrit une ligne de React</p>
+  <p class="meta">
+    Frontend : React 19 · TypeScript · Vite · React Router<br>
+    Backend consommé : API REST Spring Boot (http://localhost:8081)<br>
+    Code commenté en français dans tous les fichiers du dossier src/
+  </p>
+</section>
+
+<nav class="toc">
+  <h1>Sommaire</h1>
+  <ol>
+    <li><a href="#s0">Comment utiliser ce guide</a></li>
+    <li><a href="#s1">L'application en un coup d'œil</a></li>
+    <li><a href="#s2">React expliqué simplement (pour un angulariste)</a></li>
+    <li><a href="#s3">Visite guidée du code, étape par étape</a></li>
+    <li><a href="#s4">Les flux de l'application expliqués pas à pas</a></li>
+    <li><a href="#s5">useState et useEffect : le cœur de React</a></li>
+    <li><a href="#s6">Lancer, tester et déboguer</a></li>
+    <li><a href="#s7">Mémo de traduction Angular vers React</a></li>
+    <li><a href="#s8">Questions fréquentes de débutant</a></li>
+    <li><a href="#s9">Et après ?</a></li>
+  </ol>
+</nav>
+
+<h1 id="s0">0. Comment utiliser ce guide</h1>
+
+<p>Ce guide suppose une seule chose : vous savez écrire une application <strong>Angular</strong>, et vous n'avez jamais fait de <strong>React</strong>. Il ne vous demande pas d'apprendre le JavaScript : tout le code est en TypeScript, que vous connaissez déjà.</p>
+
+<h2>Le conseil de lecture le plus important</h2>
+<p>Ouvrez le projet dans votre éditeur <strong>à côté de ce document</strong>. Chaque chapitre cite des fichiers réels. Tous les fichiers du dossier <code>src/</code> sont commentés en français : le guide vous donne la vue d'ensemble, les commentaires vous donnent le détail ligne par ligne.</p>
+
+<h2>Les trois chemins possibles</h2>
+<table>
+  <tr><th>Vous voulez…</th><th>Lisez dans cet ordre</th></tr>
+  <tr><td>Comprendre React en général</td><td>Chapitres 2 puis 5</td></tr>
+  <tr><td>Comprendre CE projet</td><td>Chapitres 1, 3 puis 4</td></tr>
+  <tr><td>Juste lancer et tester l'application</td><td>Chapitre 6</td></tr>
+</table>
+
+<div class="callout">
+  <p><strong>Une différence à accepter dès maintenant :</strong> React n'est pas un framework complet comme Angular. Il n'y a ni modules, ni décorateurs, ni injection de dépendances, ni RxJS. React ne fait qu'une chose : afficher des composants en fonction de données. Tout le reste (routing, HTTP, état global) s'ajoute avec de petites librairies ou s'écrit à la main. C'est déroutant au début, puis très libérateur.</p>
+</div>
+
+<h1 id="s1">1. L'application en un coup d'œil</h1>
+
+<p>L'application comporte trois écrans et permet de gérer des tâches personnelles. Chaque utilisateur ne voit que ses propres tâches ; la sécurité est assurée par le token JWT envoyé à chaque requête.</p>
+
+<h2>Les trois écrans</h2>
+<table>
+  <tr><th>URL</th><th>Écran</th><th>Fichier</th></tr>
+  <tr><td><code>/login</code></td><td>Connexion (login + mot de passe)</td><td><code>src/pages/LoginPage.tsx</code></td></tr>
+  <tr><td><code>/register</code></td><td>Inscription (nom, login, email, téléphone camerounais, mot de passe)</td><td><code>src/pages/RegisterPage.tsx</code></td></tr>
+  <tr><td><code>/tasks</code></td><td>Liste des tâches + filtres + création/modification/suppression (page protégée)</td><td><code>src/pages/TasksPage.tsx</code></td></tr>
+</table>
+
+<h2>Les fonctionnalités et leur fichier responsable</h2>
+<table>
+  <tr><th>Fonctionnalité</th><th>Où c'est écrit</th></tr>
+  <tr><td>Appels HTTP, ajout automatique du token JWT, gestion des erreurs</td><td><code>src/api/client.ts</code></td></tr>
+  <tr><td>Connexion / inscription (appels API)</td><td><code>src/api/auth.ts</code></td></tr>
+  <tr><td>CRUD des tâches (appels API)</td><td><code>src/api/tasks.ts</code></td></tr>
+  <tr><td>Validation email et téléphone camerounais</td><td><code>src/utils/validation.ts</code></td></tr>
+  <tr><td>Libellés des statuts, formatage des dates</td><td><code>src/utils/task.ts</code></td></tr>
+  <tr><td>Message d'erreur générique</td><td><code>src/utils/error.ts</code></td></tr>
+  <tr><td>État de connexion partagé (token, login)</td><td><code>src/context/AuthContext.ts</code> + <code>AuthProvider.tsx</code></td></tr>
+  <tr><td>Logique des tâches (liste, filtre, chargement)</td><td><code>src/hooks/useTasks.ts</code></td></tr>
+  <tr><td>Affichage (navbar, cartes, modale, filtres…)</td><td><code>src/components/</code></td></tr>
+  <tr><td>Navigation entre les écrans</td><td><code>src/App.tsx</code></td></tr>
+</table>
+
+<h2>Les librairies, et leur équivalent Angular</h2>
+<table>
+  <tr><th>Librairie</th><th>Rôle</th><th>Équivalent Angular</th></tr>
+  <tr><td>react / react-dom 19</td><td>Le cœur (composants, rendu)</td><td>@angular/core</td></tr>
+  <tr><td>typescript</td><td>Typage statique</td><td>TypeScript (identique)</td></tr>
+  <tr><td>vite</td><td>Serveur de développement + build</td><td>Angular CLI (ng serve / ng build)</td></tr>
+  <tr><td>react-router-dom</td><td>Navigation entre les pages</td><td>@angular/router</td></tr>
+  <tr><td>fetch (natif navigateur)</td><td>Requêtes HTTP</td><td>HttpClient</td></tr>
+</table>
+
+<h1 id="s2">2. React expliqué simplement (pour un angulariste)</h1>
+
+<p>Ce chapitre est le plus important du guide. Une fois ces sept notions comprises, tout le code du projet devient lisible. Chaque notion est expliquée avec un mini-exemple autonome, puis reliée au projet.</p>
+
+<h2>2.1 Un composant est une fonction qui retourne du HTML</h2>
+
+<p>Oubliez la classe <code>@Component</code>. En React, un composant est une fonction JavaScript qui <strong>retourne du HTML</strong>. Ce HTML écrit dans du TypeScript s'appelle le <strong>JSX</strong> :</p>
+
+<pre><code>function Bonjour() {
+  return &lt;h1&gt;Bonjour !&lt;/h1&gt;;
+}</code></pre>
+
+<p>On l'utilise comme une balise HTML : <code>&lt;Bonjour /&gt;</code>. La majuscule est obligatoire — c'est ainsi que React distingue un composant d'une balise HTML réelle.</p>
+
+<p>Dans le projet, <code>StatusBadge</code> est un composant très simple :</p>
+
+<pre><code>export function StatusBadge({ status }: StatusBadgeProps) {
+  return &lt;span className={`badge badge--${status.toLowerCase()}`}&gt;
+    {statusLabel(status)}
+  &lt;/span&gt;;
+}</code></pre>
+
+<p><strong>Trois différences JSX à retenir :</strong></p>
+<ul>
+  <li>On écrit <code>className</code> et non <code>class</code> (<code>class</code> est un mot réservé de JavaScript).</li>
+  <li>Pour afficher une valeur, on met des accolades : <code>{status}</code>. En Angular : <code>{{ status }}</code>.</li>
+  <li>Un attribut de composant est en camelCase : <code>onClick</code> (Angular : <code>(click)</code>), <code>value</code> (Angular : <code>[value]</code>).</li>
+</ul>
+
+<h2>2.2 Les props sont les paramètres de la fonction</h2>
+
+<p>Là où Angular écrit <code>@Input() nom: string</code>, React écrit simplement un paramètre de fonction :</p>
+
+<pre><code>function Bonjour({ nom }: { nom: string }) {
+  return &lt;h1&gt;Bonjour {nom} !&lt;/h1&gt;;
+}
+
+// Utilisation : &lt;Bonjour nom="Awa" /&gt;</code></pre>
+
+<p>Le <code>{ nom }</code> entre accolades s'appelle une <em>déstructuration</em> : c'est du JavaScript moderne qui extrait la propriété <code>nom</code> de l'objet des props. Dans le projet, <code>TaskItem</code> reçoit trois props : la tâche et deux fonctions.</p>
+
+<div class="callout">
+  <p><strong>Communication enfant vers parent :</strong> Angular utilise <code>@Output()</code> + <code>EventEmitter</code>. React fait plus simple : le parent passe une <strong>fonction en prop</strong> et l'enfant l'appelle. Dans <code>TaskItem</code>, les props <code>onEdit</code> et <code>onDelete</code> sont exactement cela.</p>
+</div>
+
+<h2>2.3 L'état local : la mémoire du composant (useState)</h2>
+
+<p>Un composant doit parfois se souvenir de choses : la valeur d'un champ, une liste, un booléen « en cours de chargement ». En Angular, ce sont des propriétés de classe. En React, on utilise le hook <code>useState</code>. Voici un compteur complet :</p>
+
+<pre><code>import { useState } from 'react';
+
+function Compteur() {
+  const [valeur, setValeur] = useState(0);
+
+  return (
+    &lt;button onClick={() =&gt; setValeur(valeur + 1)}&gt;
+      Cliqué {valeur} fois
+    &lt;/button&gt;
+  );
+}</code></pre>
+
+<p>Décortiquons la ligne magique :</p>
+<ul>
+  <li><code>useState(0)</code> déclare un état avec la valeur initiale <code>0</code> et retourne un tableau de deux éléments.</li>
+  <li><code>const [valeur, setValeur] = ...</code> récupère ces deux éléments : la valeur actuelle et la fonction pour la modifier.</li>
+  <li><code>setValeur(1)</code> change la valeur <strong>et demande à React de redessiner le composant</strong>.</li>
+</ul>
+
+<div class="callout callout--warn">
+  <p><strong>Règle absolue :</strong> on n'écrit <span class="no">jamais</span> <code>valeur = valeur + 1</code>. Si on modifie la variable directement, React ne le sait pas et l'écran ne change pas. On passe <strong>toujours</strong> par la fonction <code>setValeur</code>.</p>
+</div>
+
+<p>Dans le projet, chaque champ de formulaire a son propre état. Par exemple dans <code>TaskFormModal</code> :</p>
+
+<pre><code>const [title, setTitle] = useState(task?.title ?? '');
+const [description, setDescription] = useState(task?.description ?? '');
+const [status, setStatus] = useState&lt;TaskStatus&gt;(task?.status ?? 'TODO');</code></pre>
+
+<p>Et le champ est « contrôlé » par cet état — c'est l'équivalent de <code>[(ngModel)]</code> :</p>
+
+<pre><code>&lt;input
+  value={title}
+  onChange={(event) =&gt; setTitle(event.target.value)}
+/&gt;</code></pre>
+
+<h2>2.4 Quand l'état change, React redessine</h2>
+
+<p>Voici le fonctionnement, en une phrase : <strong>quand un état change, React ré-exécute la fonction du composant, puis compare le nouveau résultat avec l'ancien pour ne mettre à jour que ce qui a changé à l'écran.</strong></p>
+
+<p>Conséquences pratiques :</p>
+<ul>
+  <li>Le code de la fonction de composant s'exécute <em>à chaque rendu</em>. Ce n'est pas un « constructeur » : évitez-y les effets de bord (appels API, écritures).</li>
+  <li>Il n'y a pas de « détection de changement » globale comme en Angular : React sait exactement quel composant a changé.</li>
+  <li>Comme React compare les <em>références</em>, on ne modifie jamais un tableau ou un objet existant : on en crée un nouveau (voir chapitre 5).</li>
+</ul>
+
+<h2>2.5 useEffect : le code exécuté « après l'affichage »</h2>
+
+<p>Certaines choses ne peuvent pas se faire pendant le rendu : appeler le serveur, s'abonner à un événement clavier, modifier le titre de l'onglet. Pour cela, React fournit le hook <code>useEffect</code>. Exemple :</p>
+
+<pre><code>useEffect(() =&gt; {
+  document.title = `Cliqué ${valeur} fois`;
+}, [valeur]);</code></pre>
+
+<p>La fonction est exécutée <strong>après</strong> que React a affiché le composant. Le deuxième argument, le tableau <code>[valeur]</code>, s'appelle la <strong>liste des dépendances</strong>. Il existe trois cas :</p>
+
+<table>
+  <tr><th>Écriture</th><th>Quand l'effet s'exécute</th><th>Équivalent Angular</th></tr>
+  <tr><td><code>useEffect(() =&gt; {...})</code></td><td>Après chaque rendu (rarement souhaité)</td><td>—</td></tr>
+  <tr><td><code>useEffect(() =&gt; {...}, [])</code></td><td>Une seule fois, au montage</td><td><code>ngOnInit</code></td></tr>
+  <tr><td><code>useEffect(() =&gt; {...}, [valeur])</code></td><td>Au montage, puis à chaque fois que <code>valeur</code> change</td><td><code>ngOnChanges</code></td></tr>
+</table>
+
+<p>Un effet peut aussi se <strong>nettoyer</strong> : si la fonction retourne une autre fonction, React l'appellera avant le prochain passage de l'effet et quand le composant disparaît. C'est le <code>ngOnDestroy</code> d'Angular :</p>
+
+<pre><code>useEffect(() =&gt; {
+  const handleKeyDown = (event: KeyboardEvent) =&gt; {
+    if (event.key === 'Escape') onClose();
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () =&gt; window.removeEventListener('keydown', handleKeyDown);
+}, [onClose]);</code></pre>
+
+<p>Dans le projet, cet effet sert à fermer la fenêtre modale avec la touche Échap (fichier <code>TaskFormModal.tsx</code>). Le chapitre 5 approfondit <code>useState</code> et <code>useEffect</code> avec les pièges classiques.</p>
+
+<h2>2.6 Le contexte : partager sans injection de dépendances</h2>
+
+<p>React n'a pas d'injecteur. Pour que toutes les pages connaissent l'utilisateur connecté, on utilise un <strong>contexte</strong> : une « boîte » posée tout en haut de l'arbre des composants, que n'importe quel composant descendant peut ouvrir.</p>
+
+<p>Le projet découpe cela en trois petits fichiers :</p>
+<table>
+  <tr><th>Fichier</th><th>Rôle</th><th>Analogie Angular</th></tr>
+  <tr><td><code>context/AuthContext.ts</code></td><td>Décrit ce que la boîte contient et fournit le hook <code>useAuth()</code></td><td>Le type du service</td></tr>
+  <tr><td><code>context/AuthProvider.tsx</code></td><td>Remplit la boîte (token, login, signIn, signOut)</td><td>Le service <code>providedIn: 'root'</code></td></tr>
+  <tr><td>N'importe quel composant</td><td>Ouvre la boîte avec <code>const { login } = useAuth()</code></td><td><code>constructor(private auth: AuthService)</code></td></tr>
+</table>
+
+<div class="callout callout--info">
+  <p><strong>Différence de fond :</strong> en Angular, l'injecteur crée <em>une</em> instance du service et vous l'injecte. En React, <code>AuthProvider</code> détient l'état, et <code>useAuth()</code> le lit. C'est presque la même chose vue de l'extérieur : <code>useAuth()</code> remplace l'injection.</p>
+</div>
+
+<h2>2.7 Les quatre règles d'or</h2>
+
+<ol>
+  <li><strong>Les hooks au premier niveau.</strong> <code>useState</code>, <code>useEffect</code>, etc. s'appellent toujours au même endroit du composant, jamais dans un <code>if</code> ou une boucle. C'est pour cela que les <code>return &lt;Navigate /&gt;</code> conditionnels (dans <code>LoginPage</code>, <code>RegisterPage</code>) sont placés <em>après</em> les hooks.</li>
+  <li><strong>Jamais de mutation d'état.</strong> On remplace par une nouvelle valeur : <code>setTasks([nouvelle, ...tasks])</code>, pas <code>tasks.push(...)</code>.</li>
+  <li><strong>Une clé stable pour chaque élément d'une liste.</strong> Dans un <code>.map()</code>, la prop <code>key</code> est obligatoire (équivalent du <code>trackBy</code> d'Angular).</li>
+  <li><strong>Les données descendent, les événements remontent.</strong> Le parent passe des données (props) et des fonctions de rappel ; l'enfant appelle ces fonctions.</li>
+</ol>
+
+<h2>2.8 Tableau de correspondance complet</h2>
+<table>
+  <tr><th>Concept</th><th>Angular</th><th>React (ce projet)</th></tr>
+  <tr><td>Composant</td><td>Classe avec <code>@Component</code></td><td>Fonction qui retourne du JSX</td></tr>
+  <tr><td>Template</td><td>Fichier <code>.html</code> séparé</td><td>JSX dans le même fichier <code>.tsx</code></td></tr>
+  <tr><td>Données entrantes</td><td><code>@Input()</code></td><td>Props (paramètre de fonction)</td></tr>
+  <tr><td>Événements sortants</td><td><code>@Output() EventEmitter</code></td><td>Fonctions passées en props</td></tr>
+  <tr><td>État local</td><td>Propriété de classe</td><td><code>useState</code></td></tr>
+  <tr><td>Cycle de vie</td><td><code>ngOnInit</code>, <code>ngOnDestroy</code>…</td><td><code>useEffect</code> (+ nettoyage)</td></tr>
+  <tr><td>Services / DI</td><td><code>@Injectable</code> + constructeur</td><td>Modules ES + <code>Context</code> + <code>useAuth()</code></td></tr>
+  <tr><td>Observables</td><td>RxJS</td><td>Promesses <code>async/await</code></td></tr>
+  <tr><td>Annuler une requête</td><td><code>takeUntil(destroy$)</code></td><td>Drapeau <code>cancelled</code> + nettoyage d'effet</td></tr>
+  <tr><td>Intercepteur HTTP</td><td><code>HttpInterceptor</code></td><td>En-tête ajouté dans <code>client.ts</code></td></tr>
+  <tr><td>Guard de route</td><td><code>CanActivate</code></td><td>Composant <code>ProtectedRoute</code></td></tr>
+  <tr><td>Condition</td><td><code>*ngIf</code></td><td><code>{condition &amp;&amp; ...}</code> ou ternaire</td></tr>
+  <tr><td>Boucle</td><td><code>*ngFor</code></td><td><code>.map()</code> avec <code>key</code></td></tr>
+  <tr><td>Formulaire</td><td><code>ngModel</code> / Reactive Forms</td><td>Champ contrôlé : <code>value</code> + <code>onChange</code></td></tr>
+  <tr><td>Pipes</td><td><code>| date</code>, <code>| uppercase</code></td><td>Fonctions utilitaires (<code>utils/task.ts</code>)</td></tr>
+  <tr><td>Styles</td><td>Encapsulation par composant</td><td>CSS global (classes préfixées)</td></tr>
+  <tr><td>Lancer en dev</td><td><code>ng serve</code></td><td><code>npm run dev</code></td></tr>
+</table>
+<h1 id="s3">3. Visite guidée du code, étape par étape</h1>
+
+<p>Cette visite suit exactement l'ordre conseillé dans le <code>README.md</code>. À chaque étape : le rôle du fichier, ce qu'il faut retenir, et un court extrait. Ouvrez les fichiers dans votre éditeur au fur et à mesure.</p>
+
+<h2>Étape 1 — <span class="file">src/types/index.ts</span> : le vocabulaire des données</h2>
+<p>Avant de lire du code, on lit les <strong>types</strong> : ils décrivent tout ce qui circule entre le frontend et l'API. C'est l'équivalent de vos interfaces de modèles Angular.</p>
+<pre><code>export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  createdAt: string;
+}</code></pre>
+<p><strong>À retenir :</strong> <code>TaskStatus</code> est une union de trois chaînes : TypeScript interdit toute autre valeur. <code>description</code> peut être <code>null</code> (le backend l'autorise).</p>
+
+<h2>Étape 2 — <span class="file">src/api/client.ts</span> : le seul fichier qui parle au réseau</h2>
+<p>C'est le fichier le plus important côté données. Il joue le rôle de <code>HttpClient</code> <strong>et</strong> d'<code>HttpInterceptor</code> :</p>
+<ul>
+  <li>il préfixe chaque appel avec l'adresse du backend (<code>http://localhost:8081</code>) ;</li>
+  <li>il ajoute l'en-tête <code>Authorization: Bearer &lt;token&gt;</code> automatiquement ;</li>
+  <li>il transforme toutes les erreurs en <code>ApiError</code> avec le message du backend.</li>
+</ul>
+<pre><code>const token = getStoredToken();
+if (token) {
+  headers.set('Authorization', `Bearer ${token}`);
+}
+
+const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });</code></pre>
+<p><strong>À retenir :</strong> aucun autre fichier n'utilise <code>fetch</code>. Si l'adresse du backend change, on ne modifie qu'ici (ou via <code>.env</code>).</p>
+
+<h2>Étape 3 — <span class="file">src/api/auth.ts</span> et <span class="file">tasks.ts</span> : les services</h2>
+<p>Une fonction par endpoint. Ce sont vos services Angular, mais en version minimale :</p>
+<pre><code>export function login(credentials: Credentials): Promise&lt;AuthenticationResponse&gt; {
+  return api.post&lt;AuthenticationResponse&gt;('/api/auth/login', credentials);
+}
+
+export function getTasks(status?: TaskStatus | ''): Promise&lt;Task[]&gt; {
+  const query = status ? `?status=${status}` : '';
+  return api.get&lt;Task[]&gt;(`/api/tasks${query}`);
+}</code></pre>
+<p><strong>À retenir :</strong> les composants ne connaissent jamais les URL de l'API ; ils appellent <code>login(...)</code>, <code>createTask(...)</code>, etc.</p>
+
+<h2>Étape 4 — <span class="file">src/utils/</span> : les petites fonctions pures</h2>
+<table>
+  <tr><th>Fichier</th><th>Contenu</th></tr>
+  <tr><td><code>validation.ts</code></td><td>Regex email et téléphone camerounais + fonctions <code>isValidEmail()</code>, <code>isValidCameroonPhone()</code></td></tr>
+  <tr><td><code>task.ts</code></td><td><code>statusLabel()</code> (IN_PROGRESS → « En cours »), <code>filterLabel()</code>, <code>formatDateTime()</code> (dates en français)</td></tr>
+  <tr><td><code>error.ts</code></td><td><code>getErrorMessage()</code> : transforme n'importe quelle erreur en message affichable</td></tr>
+</table>
+<p><strong>À retenir :</strong> ce sont des fonctions pures, sans état ni React. Elles remplacent les pipes Angular. Les regex sont identiques à celles du backend (<code>Constants.java</code>).</p>
+
+<h2>Étape 5 — <span class="file">src/context/AuthContext.ts</span> : la boîte de partage</h2>
+<pre><code>export interface AuthContextValue {
+  login: string | null;
+  isAuthenticated: boolean;
+  signIn: (token: string, login: string) =&gt; void;
+  signOut: () =&gt; void;
+}
+
+export const AuthContext = createContext&lt;AuthContextValue | null&gt;(null);
+
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (context === null) throw new Error("useAuth doit être utilisé à l'intérieur d'un AuthProvider");
+  return context;
+}</code></pre>
+<p><strong>À retenir :</strong> <code>useAuth()</code> est le point d'entrée unique pour connaître l'utilisateur connecté. Si un composant est utilisé hors du provider, l'erreur est immédiate et claire.</p>
+
+<h2>Étape 6 — <span class="file">src/context/AuthProvider.tsx</span> : celui qui remplit la boîte</h2>
+<pre><code>const [token, setToken] = useState&lt;string | null&gt;(() =&gt; getStoredToken());
+const [login, setLogin] = useState&lt;string | null&gt;(() =&gt; getStoredLogin());
+
+const signIn = useCallback((newToken: string, newLogin: string) =&gt; {
+  storeAuth(newToken, newLogin);   // 1. on écrit dans le navigateur
+  setToken(newToken);              // 2. on met à jour l'état React
+  setLogin(newLogin);
+}, []);</code></pre>
+<p><strong>À retenir :</strong> le formulaire <code>useState(() =&gt; ...)</code> (une fonction) ne lit le localStorage qu'une seule fois. Et c'est la mise à jour d'état (point 2) qui fait réagir toute l'application.</p>
+
+<h2>Étape 7 — <span class="file">src/hooks/useTasks.ts</span> : la logique des tâches isolée</h2>
+<p>Un <strong>hook personnalisé</strong> est simplement une fonction qui commence par <code>use</code> et qui regroupe de la logique React. <code>useTasks</code> contient : la liste, le filtre, l'état de chargement, l'erreur, la fonction <code>changeFilter</code> et la fonction <code>refresh</code>.</p>
+<pre><code>export function useTasks() {
+  const [tasks, setTasks] = useState&lt;Task[]&gt;([]);
+  const [statusFilter, setStatusFilter] = useState&lt;TaskStatus | ''&gt;('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState&lt;string | null&gt;(null);
+
+  useEffect(() =&gt; {
+    let cancelled = false;
+
+    getTasks(statusFilter)
+      .then((data) =&gt; { if (!cancelled) { setTasks(data); setError(null); } })
+      .catch((loadError) =&gt; { if (!cancelled) setError(getErrorMessage(loadError)); })
+      .finally(() =&gt; { if (!cancelled) setLoading(false); });
+
+    return () =&gt; { cancelled = true; };
+  }, [statusFilter]);
+
+  // ... changeFilter et refresh ...
+
+  return { tasks, statusFilter, loading, error, changeFilter, refresh };
+}</code></pre>
+<p><strong>À retenir :</strong> ce fichier est le seul endroit qui appelle <code>getTasks()</code> pour l'affichage. La page ne voit que des données prêtes à afficher. C'est l'équivalent d'un service Angular qui expose un état observable, mais en 60 lignes.</p>
+
+<h2>Étape 8 — <span class="file">src/components/</span> : les briques d'affichage</h2>
+<table>
+  <tr><th>Composant</th><th>Rôle</th><th>Notion illustrée</th></tr>
+  <tr><td><code>ProtectedRoute.tsx</code></td><td>Redirige vers /login si non connecté</td><td>Guard (<code>CanActivate</code>)</td></tr>
+  <tr><td><code>Navbar.tsx</code></td><td>Barre du haut + bouton de déconnexion</td><td><code>useAuth()</code>, <code>useNavigate()</code></td></tr>
+  <tr><td><code>StatusBadge.tsx</code></td><td>Pastille colorée du statut</td><td>Composant sans état (props seules)</td></tr>
+  <tr><td><code>TaskItem.tsx</code></td><td>Carte d'une tâche + boutons Modifier/Supprimer</td><td>Callbacks en props (enfant → parent)</td></tr>
+  <tr><td><code>TaskFilters.tsx</code></td><td>Boutons Toutes / À faire / En cours / Terminée</td><td>Props + classe conditionnelle</td></tr>
+  <tr><td><code>TasksSection.tsx</code></td><td>Chargement, liste vide, ou liste des tâches</td><td>Retours anticipés (lisibilité)</td></tr>
+  <tr><td><code>TaskFormModal.tsx</code></td><td>Formulaire de création/modification</td><td>Formulaire contrôlé, useEffect, async</td></tr>
+</table>
+
+<h2>Étape 9 — <span class="file">src/pages/</span> : les trois écrans</h2>
+<p>Une page = un composant qui assemble les briques précédentes. Depuis le découpage, <code>TasksPage</code> reste courte : elle ne gère que la modale et les actions créer/modifier/supprimer.</p>
+<pre><code>const { tasks, statusFilter, loading, error, changeFilter, refresh } = useTasks();
+
+const [modalOpen, setModalOpen] = useState(false);
+const [editingTask, setEditingTask] = useState&lt;Task | null&gt;(null);</code></pre>
+<p><strong>À retenir :</strong> les pages font le lien entre la logique (hooks, api) et l'affichage (composants).</p>
+
+<h2>Étape 10 — <span class="file">src/App.tsx</span> : le plan de navigation</h2>
+<pre><code>&lt;Routes&gt;
+  &lt;Route path="/login" element={&lt;LoginPage /&gt;} /&gt;
+  &lt;Route path="/register" element={&lt;RegisterPage /&gt;} /&gt;
+  &lt;Route path="/tasks" element={
+    &lt;ProtectedRoute&gt;&lt;TasksPage /&gt;&lt;/ProtectedRoute&gt;
+  } /&gt;
+  &lt;Route path="*" element={&lt;Navigate to="/tasks" replace /&gt;} /&gt;
+&lt;/Routes&gt;</code></pre>
+<p><strong>À retenir :</strong> lire ce fichier de haut en bas donne la carte complète de l'application.</p>
+
+<h2>Étape 11 — <span class="file">src/main.tsx</span> : le démarrage</h2>
+<pre><code>createRoot(document.getElementById('root')!).render(
+  &lt;StrictMode&gt;&lt;App /&gt;&lt;/StrictMode&gt;,
+);</code></pre>
+<p><strong>À retenir :</strong> <code>StrictMode</code> double certains traitements <em>en développement uniquement</em> pour détecter les effets mal nettoyés. C'est pour cela que <code>useTasks</code> utilise le drapeau <code>cancelled</code>.</p>
+
+<h1 id="s4">4. Les flux de l'application expliqués pas à pas</h1>
+
+<h2>4.1 Au démarrage de l'application</h2>
+<div class="flow">index.html  (contient &lt;div id="root"&gt;)
+  └─ main.tsx            createRoot(...).render(&lt;App /&gt;)
+       └─ App.tsx        BrowserRouter &gt; AuthProvider &gt; Routes
+            ├─ URL /login    → LoginPage
+            ├─ URL /register → RegisterPage
+            └─ URL /tasks    → ProtectedRoute → TasksPage</div>
+<p>Au premier affichage, <code>AuthProvider</code> lit le localStorage : si un token y est présent, l'utilisateur est considéré connecté immédiatement.</p>
+
+<h2>4.2 Inscription (bouton « S'inscrire »)</h2>
+<div class="flow">RegisterPage
+  ├─ 1. validate()                    vérifie nom, login, email, téléphone, mot de passe
+  ├─ 2. register(payload)             POST /api/auth/register
+  │       └─ client.request()         ajoute JSON + appelle fetch
+  │            └─ backend Spring      valide, hache le mot de passe, crée l'utilisateur
+  │                 └─ réponse        { accessToken, message }
+  ├─ 3. signIn(accessToken, login)    localStorage + état du contexte
+  └─ 4. navigate('/tasks')            React Router affiche TasksPage</div>
+<p>En cas de refus du backend (login déjà utilisé, email invalide…), l'exception <code>ApiError</code> remonte et le tableau <code>errors</code> s'affiche en rouge au-dessus du formulaire.</p>
+
+<h2>4.3 Connexion</h2>
+<div class="flow">LoginPage
+  ├─ 1. contrôle local               champs non vides
+  ├─ 2. login({ login, password })   POST /api/auth/login
+  │       └─ backend                 compare le mot de passe (BCrypt) + compte actif
+  │                                  puis génère un JWT valable 24 h
+  └─ 3. signIn + navigate('/tasks')</div>
+
+<h2>4.4 Afficher les tâches (le chemin le plus important)</h2>
+<div class="flow">TasksPage
+  └─ useTasks()
+       ├─ useState(...)                  crée tasks / statusFilter / loading / error
+       └─ useEffect sur [statusFilter]
+            └─ getTasks(statusFilter)         src/api/tasks.ts
+                 └─ api.get&lt;Task[]&gt;(...)      src/api/client.ts
+                      └─ fetch('/api/tasks?status=...',
+                              { Authorization: 'Bearer eyJ...' })
+                           └─ backend Spring : JwtFilter identifie l'utilisateur
+                                └─ réponse : uniquement SES tâches</div>
+<p>Deux subtilités expliquées dans les commentaires du hook :</p>
+<ul>
+  <li>Quand le filtre change, l'effet se relance (l'ancien résultat est ignoré grâce à <code>cancelled</code>).</li>
+  <li>En développement, l'appel part deux fois (StrictMode) : c'est normal, seul un résultat est conservé.</li>
+</ul>
+
+<h2>4.5 Créer ou modifier une tâche</h2>
+<div class="flow">Clic « Nouvelle tâche »        → openCreateModal()  → editingTask = null, modalOpen = true
+Clic « Modifier » d'une tâche  → openEditModal(task) → editingTask = task, modalOpen = true
+
+TaskFormModal (saisie)
+  └─ submit → handleSubmit(payload)          (dans TasksPage)
+       ├─ si editingTask → updateTask(id, payload)    PUT /api/tasks/{id}
+       ├─ sinon          → createTask(payload)        POST /api/tasks
+       ├─ closeModal()
+       └─ refresh()                                recharge la liste depuis le serveur</div>
+<p>Si le serveur refuse (titre vide, tâche d'un autre utilisateur…), <code>handleSubmit</code> laisse l'erreur remonter : la modale l'attrape et l'affiche sans se fermer.</p>
+
+<h2>4.6 Supprimer une tâche</h2>
+<div class="flow">Clic « Supprimer »
+  ├─ window.confirm('Supprimer la tâche « ... » ?')   → si Annuler, on s'arrête
+  ├─ removeTask(id)                                   DELETE /api/tasks/{id}
+  └─ refresh()                                        recharge la liste</div>
+
+<h2>4.7 Déconnexion et protection des pages</h2>
+<div class="flow">Navbar → Se déconnecter
+  ├─ signOut()        efface le localStorage + vide le contexte
+  └─ navigate('/login')
+
+Ensuite, toute tentative d'aller sur /tasks :
+  ProtectedRoute → isAuthenticated = false → &lt;Navigate to="/login" /&gt;</div>
+
+<h2>4.8 Résumé : qui appelle quoi</h2>
+<table>
+  <tr><th>Qui</th><th>Appelle</th><th>Pour quoi faire</th></tr>
+  <tr><td>Une page</td><td>Un hook (<code>useTasks</code>) ou un contexte (<code>useAuth</code>)</td><td>Obtenir des données / des actions</td></tr>
+  <tr><td>Un hook</td><td>Un service api (<code>getTasks</code>…)</td><td>Déclencher une requête</td></tr>
+  <tr><td>Un service api</td><td><code>client.request</code></td><td>Ajouter l'URL, le token, gérer les erreurs</td></tr>
+  <tr><td><code>client.request</code></td><td><code>fetch</code></td><td>Parler au backend Spring</td></tr>
+  <tr><td>Une page</td><td>Des composants d'affichage</td><td>Rendre le résultat</td></tr>
+</table>
+
+<h1 id="s5">5. useState et useEffect : le cœur de React</h1>
+
+<p>Ce chapitre approfondit les deux hooks que vous utiliserez 90 % du temps, avec les questions que se pose tout débutant.</p>
+
+<h2>5.1 Pourquoi <code>const [valeur, setValeur] = useState(0)</code> ?</h2>
+<p><code>useState</code> retourne un tableau de deux éléments qu'on « déballe » en une ligne :</p>
+<ul>
+  <li>l'élément 0 est la valeur actuelle ;
+  <li>l'élément 1 est une fonction pour changer la valeur (et prévenir React).
+</ul>
+<p>On aurait pu écrire, en plus long :</p>
+<pre><code>const paire = useState(0);
+const valeur = paire[0];
+const setValeur = paire[1];</code></pre>
+
+<h2>5.2 Pourquoi la valeur ne change-t-elle pas tout de suite ?</h2>
+<p>Les mises à jour d'état sont « asynchrones » : React attend la fin du gestionnaire d'événement pour redessiner. Donc ceci est trompeur :</p>
+<pre><code>setCount(count + 1);
+console.log(count); // affiche encore l'ANCIENNE valeur</code></pre>
+<p>Si vous devez utiliser la valeur précédente, passez une <strong>fonction</strong> à la mise à jour :</p>
+<pre><code>setCount((precedent) =&gt; precedent + 1);</code></pre>
+<p>Règle pratique : dès que la nouvelle valeur dépend de l'ancienne, utilisez la forme <code>setX((precedent) =&gt; ...)</code>.</p>
+
+<h2>5.3 Pourquoi ne jamais modifier un tableau ou un objet de l'état ?</h2>
+<p>React compare les références pour savoir si quelque chose a changé. Si vous modifiez le tableau existant, la référence reste la même et React peut manquer la mise à jour.</p>
+<pre><code>// Interdit
+tasks.push(nouvelleTache);
+setTasks(tasks);
+
+// Correct : un NOUVEAU tableau
+setTasks([...tasks, nouvelleTache]);
+
+// Correct : remplacer un élément par son id
+setTasks(tasks.map((t) =&gt; (t.id === id ? { ...t, title: 'Nouveau titre' } : t)));</code></pre>
+<p>Le <code>{ ...t, title: ... }</code> s'appelle un <em>spread</em> : il copie l'objet puis remplace une propriété. C'est le réflexe à acquérir.</p>
+
+<h2>5.4 Pourquoi mon useEffect se déclenche-t-il deux fois ?</h2>
+<p>Parce que vous êtes en mode développement et que <code>&lt;StrictMode&gt;</code> exécute volontairement chaque effet deux fois (montage, démontage, remontage) pour vérifier que le nettoyage est correct. En production : un seul appel. Dans ce projet, le drapeau <code>cancelled</code> fait que seul le dernier résultat est conservé.</p>
+
+<h2>5.5 Comment éviter les boucles infinies dans useEffect ?</h2>
+<pre><code>// Boucle infinie : l'effet modifie ce qu'il observe
+useEffect(() =&gt; {
+  setTasks([...tasks, x]);
+}, [tasks]);
+
+// Correct : l'effet ne dépend que de ce qui doit le relancer
+useEffect(() =&gt; {
+  getTasks(statusFilter).then(setTasks);
+}, [statusFilter]);</code></pre>
+<p>Question à se poser : « qu'est-ce qui doit relancer cet effet ? » La réponse donne la liste des dépendances. Si la liste change trop souvent, ne mettez pas d'objet ou de tableau créé à chaque rendu dedans.</p>
+
+<h2>5.6 Le nettoyage d'effet, à quoi ça sert vraiment ?</h2>
+<p>Trois cas typiques dans ce projet :</p>
+<table>
+  <tr><th>Effet</th><th>Nettoyage</th><th>Pourquoi</th></tr>
+  <tr><td>Écouter la touche Échap (modale)</td><td><code>removeEventListener</code></td><td>Sinon l'écouteur reste en mémoire après fermeture</td></tr>
+  <tr><td>Charger les tâches</td><td><code>cancelled = true</code></td><td>Ignorer une réponse si le filtre a changé entre-temps</td></tr>
+  <tr><td>S'abonner à un flux (non utilisé ici)</td><td>se désabonner</td><td>C'est exactement le <code>unsubscribe</code> que vous mettez dans <code>ngOnDestroy</code></td></tr>
+</table>
+
+<h2>5.7 Et un hook personnalisé, c'est quoi ?</h2>
+<p>Juste une fonction dont le nom commence par <code>use</code> et qui appelle d'autres hooks. <code>useTasks</code> en est un : il cache quatre <code>useState</code>, un <code>useEffect</code> et deux fonctions, et expose seulement ce qui est utile. C'est l'équivalent d'un service Angular spécialisé, mais il vit et meurt avec le composant qui l'utilise.</p>
+
+<h2>5.8 Les trois erreurs de débutant les plus fréquentes</h2>
+<ol>
+  <li><strong>Appeler un hook dans un <code>if</code></strong> → erreur « Rendered fewer hooks than expected ». La solution : sortir le <code>if</code> du composant ou le placer après tous les hooks.</li>
+  <li><strong>Oublier la prop <code>key</code></strong> dans un <code>.map()</code> → avertissement dans la console et comportement bizarre à la suppression. Utilisez toujours <code>key={element.id}</code>.</li>
+  <li><strong>Mettre <code>value</code> sans <code>onChange</code></strong> dans un champ → le champ devient impossible à modifier. Un champ contrôlé a toujours les deux.</li>
+</ol>
+
+<h1 id="s6">6. Lancer, tester et déboguer</h1>
+
+<h2>6.1 Lancer le backend</h2>
+<pre><code>cd task_manager_backend
+.\mvnw.cmd spring-boot:run</code></pre>
+<p>MySQL doit être démarré. L'API écoute sur <code>http://localhost:8081</code>. Un compte existe déjà : <code>admin</code> / <code>12345</code>. Swagger : <code>http://localhost:8081/swagger-ui.html</code>.</p>
+
+<h2>6.2 Lancer le frontend</h2>
+<pre><code>cd task_manager_frontend
+npm install     # une seule fois
+npm run dev     # http://localhost:5173</code></pre>
+
+<h2>6.3 Vérifier que le code est sain</h2>
+<pre><code>npm run build   # compilation TypeScript + build de production
+npm run lint    # règles de qualité (dont les règles des hooks)</code></pre>
+
+<h2>6.4 Déboguer dans le navigateur (F12)</h2>
+<table>
+  <tr><th>Onglet</th><th>À quoi il sert ici</th></tr>
+  <tr><td><strong>Console</strong></td><td>Lire les erreurs JavaScript et les avertissements React (ex. « missing key »)</td></tr>
+  <tr><td><strong>Network / Réseau</strong></td><td>Voir les appels <code>/api/tasks</code> : statut (200, 400, 403), en-tête <code>Authorization</code>, corps de la réponse</td></tr>
+  <tr><td><strong>Application</strong></td><td>Vérifier le token : Application → Local Storage → <code>tm_token</code></td></tr>
+</table>
+
+<h2>6.5 Les erreurs fréquentes et leur solution</h2>
+<table>
+  <tr><th>Message</th><th>Cause probable</th><th>Solution</th></tr>
+  <tr><td>« Impossible de contacter le serveur. Vérifiez que le backend est démarré. »</td><td>Le backend ne tourne pas</td><td>Lancer Spring Boot (6.1)</td></tr>
+  <tr><td>« Votre session a expiré, veuillez vous reconnecter »</td><td>Token expiré (24 h) ou invalide</td><td>Se reconnecter</td></tr>
+  <tr><td>403 Forbidden sur <code>/api/tasks</code></td><td>Aucun token envoyé</td><td>Vérifier <code>tm_token</code> dans le localStorage, puis se reconnecter</td></tr>
+  <tr><td>« Ce login est déjà utilisé »</td><td>Normal : validation du backend</td><td>Choisir un autre login</td></tr>
+  <tr><td>Le champ de saisie ne réagit pas</td><td><code>value</code> sans <code>onChange</code></td><td>Ajouter <code>onChange={(e) =&gt; setX(e.target.value)}</code></td></tr>
+</table>
+
+<h1 id="s7">7. Mémo express Angular vers React</h1>
+
+<p>Les 12 réflexes à garder sous la main :</p>
+<table>
+  <tr><th>Vous pensez…</th><th>Vous écrivez…</th></tr>
+  <tr><td>Composant + template</td><td>Une fonction qui retourne du JSX</td></tr>
+  <tr><td><code>@Input()</code></td><td>Paramètre de fonction typé</td></tr>
+  <tr><td><code>@Output()</code></td><td>Une prop de type <code>(valeur) =&gt; void</code></td></tr>
+  <tr><td>Propriété de classe</td><td><code>useState</code></td></tr>
+  <tr><td><code>ngOnInit</code></td><td><code>useEffect(() =&gt; {...}, [])</code></td></tr>
+  <tr><td><code>ngOnDestroy</code></td><td>La fonction de nettoyage retournée par l'effet</td></tr>
+  <tr><td><code>ngOnChanges</code></td><td><code>useEffect(() =&gt; {...}, [valeur])</code></td></tr>
+  <tr><td>Service injecté</td><td>Fonctions importées ou <code>useContexte()</code></td></tr>
+  <tr><td><code>*ngIf</code></td><td><code>{condition &amp;&amp; ...}</code></td></tr>
+  <tr><td><code>*ngFor</code></td><td><code>{liste.map((x) =&gt; &lt;El key={x.id} /&gt;)}</code></td></tr>
+  <tr><td><code>[(ngModel)]</code></td><td><code>value={x} onChange={(e) =&gt; setX(e.target.value)}</code></td></tr>
+  <tr><td><code>| date</code></td><td><code>formatDateTime(iso)</code></td></tr>
+</table>
+
+<h1 id="s8">8. Questions fréquentes de débutant</h1>
+
+<div class="qa">
+  <p class="q">Où est le <code>ngOnInit</code> ?</p>
+  <p class="a">C'est <code>useEffect(() =&gt; { ... }, [])</code>. Le tableau vide signifie « une seule fois au montage ».</p>
+</div>
+
+<div class="qa">
+  <p class="q">Où sont les services et l'injection de dépendances ?</p>
+  <p class="a">React n'en a pas. Les « services » sont des fichiers de fonctions importées (<code>src/api/</code>), et le partage global passe par un contexte (<code>src/context/</code>).</p>
+</div>
+
+<div class="qa">
+  <p class="q">Où est le fichier HTML du composant ?</p>
+  <p class="a">Il n'existe pas : le HTML est écrit dans la fonction, en JSX, juste avant le <code>return</code>.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Pourquoi des parenthèses après <code>return</code> ?</p>
+  <p class="a">Pour retourner du JSX sur plusieurs lignes sans ambiguïté : <code>return ( &lt;div&gt;...&lt;/div&gt; );</code>. C'est une simple convention d'écriture.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Pourquoi <code>className</code> et pas <code>class</code> ?</p>
+  <p class="a">Parce que JSX est du JavaScript, et que <code>class</code> y est un mot réservé. React a choisi <code>className</code>.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Pourquoi mon appel API part-il deux fois au démarrage ?</p>
+  <p class="a">C'est <code>&lt;StrictMode&gt;</code> en développement, pour vérifier que le nettoyage des effets est correct. En production, un seul appel. Le drapeau <code>cancelled</code> de <code>useTasks</code> garantit qu'un seul résultat est utilisé.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Comment ajouter une nouvelle page (par exemple /profile) ?</p>
+  <p class="a">
+    1) Créer <code>src/pages/ProfilePage.tsx</code> avec une fonction <code>ProfilePage</code> qui retourne du JSX.<br>
+    2) L'importer dans <code>src/App.tsx</code>.<br>
+    3) Ajouter une ligne : <code>&lt;Route path="/profile" element={&lt;ProfilePage /&gt;} /&gt;</code> (l'entourer de <code>&lt;ProtectedRoute&gt;</code> si la page doit être réservée aux connectés).<br>
+    4) Ajouter un <code>&lt;Link to="/profile"&gt;</code> là où vous voulez le lien.
+  </p>
+</div>
+
+<div class="qa">
+  <p class="q">Comment ajouter un champ à un formulaire ?</p>
+  <p class="a">Trois ajouts : un <code>useState</code> pour la valeur, un bloc <code>&lt;div className="field"&gt;</code> avec un <code>&lt;input value={...} onChange={...} /&gt;</code>, et l'ajout du champ dans l'objet envoyé au serveur. Le CSS <code>.field</code> s'occupe de la mise en forme.</p>
+</div>
+
+<div class="qa">
+  <p class="q">Puis-je utiliser RxJS ?</p>
+  <p class="a">Oui techniquement, mais ce n'est pas nécessaire ici : les appels HTTP sont des promesses <code>async/await</code>, plus simples à lire pour ce type d'application. Les Observables restent utiles pour des flux d'événements complexes.</p>
+</div>
+
+<h1 id="s9">9. Et après ?</h1>
+
+<h2>Exercices conseillés sur ce projet (du plus simple au plus complet)</h2>
+<ol>
+  <li><strong>Ajouter un champ « priorité »</strong> à la tâche (types, formulaire, affichage) : c'est l'exercice complet minimum pour pratiquer tout le cycle.</li>
+  <li><strong>Ajouter une recherche par titre</strong> au-dessus des filtres, avec un <code>useState</code> supplémentaire.</li>
+  <li><strong>Trier par titre ou par date</strong> : ajouter un bouton de tri (le backend accepte déjà des critères de tri).</li>
+  <li><strong>Déconnexion automatique</strong> quand le token expire : dans <code>client.ts</code>, réagir aux réponses 401/403.</li>
+  <li><strong>Mode sombre</strong> : des variables CSS suffisent (voir <code>index.css</code>).</li>
+</ol>
+
+<h2>Ressources recommandées</h2>
+<ul>
+  <li><strong>fr.react.dev</strong> — la documentation officielle en français, excellente et pédagogique. Le chapitre « Penser en React » est la suite logique de ce guide.</li>
+  <li><strong>reactrouter.com</strong> — la documentation du routeur.</li>
+  <li><strong>developer.mozilla.org</strong> — pour <code>fetch</code> et les promesses.</li>
+</ul>
+
+<div class="callout callout--ok">
+  <p><strong>Le meilleur exercice reste ce projet lui-même :</strong> chaque fichier de <code>src/</code> est commenté en français. Quand une ligne vous résiste, cherchez le commentaire au-dessus : il explique le « pourquoi », pas seulement le « quoi ».</p>
+</div>
+
+<hr>
+<p class="small">Document généré pour le projet Task Manager. Édition 2 : reflète l'organisation actuelle du code (hook <code>useTasks</code>, composants <code>TaskFilters</code> et <code>TasksSection</code>, <code>utils/error.ts</code>, renommage <code>loginValue</code>) et tous les fichiers commentés. Vérifié par <code>npm run build</code> et <code>npm run lint</code> sans erreur.</p>
+
+</body>
+</html>
+
