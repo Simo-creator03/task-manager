@@ -98,7 +98,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Connexion securisee a Cloud SQL (MySQL) depuis Cloud Run via socket Unix.
+        <!-- Connexion securisee a Cloud SQL (MySQL) depuis App Engine via socket Unix.
              Utilise uniquement quand l'URL JDBC contient le parametre socketFactory. -->
         <dependency>
             <groupId>com.google.cloud.sql</groupId>

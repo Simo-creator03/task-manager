@@ -9,8 +9,9 @@
 #   - Frontend     : http://localhost:5173
 #   - Compte de test : nelson / 12345
 #
-# Ce fichier sert uniquement à vérifier que les images Docker
-# fonctionnent avant de déployer sur GCP.
+# Ce fichier sert uniquement à tester l'application en local :
+# le déploiement GCP (App Engine + Firebase Hosting) n'utilise
+# plus Docker.
 # ============================================================
 
 services:

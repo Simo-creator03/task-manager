@@ -1,6 +1,15 @@
 # Task Manager — Monorepo (backend + frontend) avec pipeline CI/CD
 
-Application de gestion de tâches : **Spring Boot** (`task_manager_backend`) + **React/Vite** (`task_manager_frontend`), livrée automatiquement sur **Google Cloud Run** par un pipeline **GitHub Actions + Cloud Build**.
+Application de gestion de tâches : **Spring Boot** (`task_manager_backend`) + **React/Vite** (`task_manager_frontend`).
+
+Déploiement **100 % gratuit** (aucune facturation Google Cloud) :
+
+- **frontend** publié sur **Firebase Hosting** (offre Spark, gratuite) ;
+- **backend** exécuté **en local** (ton PC) avec MySQL, exposé sur Internet par un **tunnel gratuit** (ngrok ou cloudflared).
+
+> App Engine + Cloud SQL exigent un compte de facturation : la configuration est
+> prête (`app.yaml`, job désactivé dans le pipeline) pour plus tard, voir
+> [« Plus tard : App Engine »](#plus-tard--app-engine-avec-facturation).
 
 ## Le pipeline en un coup d'œil
 
@@ -14,128 +23,68 @@ Application de gestion de tâches : **Spring Boot** (`task_manager_backend`) + *
 │  job "backend"   → mvn verify            (compile + tests)   │
 │  job "frontend"  → npm ci, lint, build   (compile + lint)    │
 │                                                              │
-│  job "deploy" (uniquement sur push main)                     │
-│    1. docker build backend  → push Artifact Registry         │
-│    2. docker build frontend → push Artifact Registry         │
-│    3. gcloud builds submit ──────────────┐                   │
-└──────────────────────────────────────────│───────────────────┘
-                                           ▼
-┌──────────────────────────────────────────────────────────────┐
-│ Cloud Build (cloudbuild.yaml)                                │
-│    gcloud run deploy task-manager-backend  (image fraîche)   │
-│    gcloud run deploy task-manager-frontend (image fraîche)   │
+│  job "deploy-frontend" (push main uniquement)                │
+│    npm run build avec VITE_API_URL = URL du tunnel           │
+│    firebase deploy --only hosting ──► Firebase Hosting       │
+│                                                              │
+│  job "deploy-backend" : désactivé (facturation GCP requise)  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## Fichiers ajoutés pour le CI/CD
+## Fichiers du projet
 
 | Fichier | Rôle |
 | --- | --- |
-| `.github/workflows/ci-cd.yml` | Pipeline GitHub Actions : tests, images Docker, déclenchement du déploiement |
-| `cloudbuild.yaml` | Déploiement des deux services sur Cloud Run |
-| `task_manager_backend/Dockerfile` | Image du backend (Maven → JRE 17 alpine) |
-| `task_manager_frontend/Dockerfile` | Image du frontend (Node build → nginx) |
-| `task_manager_frontend/nginx.conf` | Serveur statique : port 8080, fallback SPA, cache |
-| `docker-compose.yml` | Test **local** des images de production |
-| `.gcloudignore` | N'envoie que `cloudbuild.yaml` à Cloud Build |
+| `.github/workflows/ci-cd.yml` | Pipeline GitHub Actions : tests, déploiement Firebase Hosting |
+| `firebase.json` | Configuration Firebase Hosting (dossier `dist`, fallback SPA, cache) |
+| `task_manager_backend/app.yaml` | Configuration App Engine — **pour plus tard** (facturation requise) |
+| `docker-compose.yml` | Lance MySQL + backend + frontend en local |
+| `task_manager_backend/Dockerfile` | Image backend (utilisée par `docker compose`) |
+| `task_manager_frontend/Dockerfile` | Image frontend (utilisée par `docker compose`) |
+| `task_manager_frontend/nginx.conf` | Serveur statique du conteneur local |
 
-## Prérequis GCP (à faire une seule fois)
+## Configuration (une seule fois, sans facturation)
 
-Remplacez `mon-projet-gcp` par l'identifiant de votre projet et `europe-west1` par votre région.
-
-### 1. Projet et APIs
+### 1. Firebase Hosting
 
 ```bash
-export PROJECT_ID="mon-projet-gcp"
-export REGION="europe-west1"
-gcloud config set project "$PROJECT_ID"
-
-gcloud services enable \
-  run.googleapis.com \
-  cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com \
-  secretmanager.googleapis.com \
-  sqladmin.googleapis.com
+npm install -g firebase-tools
+firebase login
+firebase projects:addfirebase        # choisis ton projet GCP existant
 ```
 
-### 2. Dépôt d'images (Artifact Registry)
+Cela associe Firebase au projet et crée le site Hosting par défaut
+(`https://PROJECT_ID.web.app`). Aucune carte bancaire n'est demandée : l'offre
+Spark inclut le hosting statique, le SSL et un domaine `web.app` gratuit.
+
+> Si la commande échoue, passe par la
+> [console Firebase](https://console.firebase.google.com) :
+> **Ajouter un projet** → **Add Firebase to Google Cloud project**, puis
+> **Hosting → Get started**.
+
+### 2. Compte de service pour GitHub Actions
+
+Le pipeline doit pouvoir publier sur Hosting. Dans Google Cloud SDK Shell
+(remplace `mon-projet-gcp` par ton identifiant de projet) :
 
 ```bash
-gcloud artifacts repositories create task-manager \
-  --repository-format=docker \
-  --location="$REGION"
-```
+gcloud config set project mon-projet-gcp
 
-### 3. Base MySQL (Cloud SQL)
-
-```bash
-gcloud sql instances create task-manager-db \
-  --database-version=MYSQL_8_0 \
-  --tier=db-f1-micro \
-  --region="$REGION"
-
-gcloud sql databases create task_manager --instance=task-manager-db
-
-# Choisissez un mot de passe fort
-gcloud sql users create task_manager \
-  --instance=task-manager-db \
-  --password="CHANGEZ_MOI_MOT_DE_PASSE_FORT"
-```
-
-### 4. Mot de passe dans Secret Manager
-
-```bash
-printf "CHANGEZ_MOI_MOT_DE_PASSE_FORT" | gcloud secrets create db-password \
-  --data-file=- \
-  --replication-policy=automatic
-```
-
-### 5. Compte de service pour la CI (GitHub Actions)
-
-```bash
 gcloud iam service-accounts create github-ci --display-name="GitHub Actions CI"
 
-SA="github-ci@$PROJECT_ID.iam.gserviceaccount.com"
+gcloud projects add-iam-policy-binding mon-projet-gcp --member="serviceAccount:github-ci@mon-projet-gcp.iam.gserviceaccount.com" --role=roles/firebasehosting.admin
 
-# Rôles nécessaires : pousser des images + déclencher Cloud Build
-for role in \
-  roles/artifactregistry.writer \
-  roles/cloudbuild.builds.editor \
-  roles/run.admin \
-  roles/iam.serviceAccountUser
-do
-  gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-    --member="serviceAccount:$SA" --role="$role"
-done
+gcloud projects add-iam-policy-binding mon-projet-gcp --member="serviceAccount:github-ci@mon-projet-gcp.iam.gserviceaccount.com" --role=roles/serviceusage.apiKeysViewer
 
-# Clé JSON à coller dans le secret GitHub GCP_SA_KEY
-gcloud iam service-accounts keys create github-ci-key.json --iam-account="$SA"
+gcloud iam service-accounts keys create github-ci-key.json --iam-account=github-ci@mon-projet-gcp.iam.gserviceaccount.com
 ```
 
-> Ouvrez `github-ci-key.json`, copiez tout son contenu dans le secret GitHub
-> `GCP_SA_KEY`, puis supprimez le fichier.
+> Ces commandes ne nécessitent **pas** de facturation. Si le compte
+> `github-ci` existe déjà, saute la première commande.
+> Ouvre `github-ci-key.json`, copie tout son contenu dans le secret GitHub
+> `GCP_SA_KEY`, puis supprime le fichier.
 
-### 6. Rôles des comptes de service internes
-
-```bash
-PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
-CLOUDBUILD_SA="$PROJECT_NUMBER@cloudbuild.gserviceaccount.com"
-COMPUTE_SA="$PROJECT_NUMBER-compute@developer.gserviceaccount.com"
-
-# Cloud Build doit pouvoir déployer et agir en tant que compte de service
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:$CLOUDBUILD_SA" --role=roles/run.admin
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:$CLOUDBUILD_SA" --role=roles/iam.serviceAccountUser
-
-# Cloud Run doit pouvoir lire Cloud SQL et le secret du mot de passe
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:$COMPUTE_SA" --role=roles/cloudsql.client
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:$COMPUTE_SA" --role=roles/secretmanager.secretAccessor
-```
-
-## Configuration GitHub
+### 3. Configuration GitHub
 
 Dans le dépôt : **Settings → Secrets and variables → Actions**.
 
@@ -143,60 +92,62 @@ Dans le dépôt : **Settings → Secrets and variables → Actions**.
 | --- | --- | --- | --- |
 | Secret | `GCP_SA_KEY` | Contenu du fichier `github-ci-key.json` | Oui |
 | Variable | `GCP_PROJECT_ID` | `mon-projet-gcp` | Oui |
-| Variable | `CLOUDSQL_INSTANCE` | `mon-projet-gcp:europe-west1:task-manager-db` | Oui |
-| Variable | `DB_NAME` | `task_manager` | Non (défaut) |
-| Variable | `DB_USER` | `task_manager` | Non (défaut) |
-| Variable | `VITE_API_URL` | URL publique du backend Cloud Run | Oui (voir étape 5 ci-dessous) |
+| Variable | `VITE_API_URL` | URL du tunnel vers ton backend local (voir ci-dessous) | Oui |
 
-## Premier déploiement
+## Utilisation quotidienne
 
-1. **Initialiser Git et pousser le code** (depuis ce dossier) :
+### 1. Démarrer le backend en local
 
-   ```bash
-   git init -b main
-   git add .
-   git commit -m "chore: monorepo + pipeline CI/CD"
-   git remote add origin https://github.com/<compte>/<depot>.git
-   git push -u origin main
-   ```
+Avec une base MySQL locale sur le port 3306 (celle de `application-dev.yml`) :
 
-2. Renseigner les secrets et variables du tableau ci-dessus
-   (`VITE_API_URL` peut rester vide au tout premier passage).
+```powershell
+cd task_manager_backend
+.\mvnw.cmd spring-boot:run
+```
 
-3. Le workflow se lance : tests → images → déploiement. Suivez-le dans
-   l'onglet **Actions** du dépôt et dans **Cloud Build → Historique**.
+L'API écoute sur `http://localhost:8081` (Swagger : `http://localhost:8081/swagger-ui.html`).
+Compte de test : **nelson / 12345**.
 
-4. **Récupérer l'URL du backend** une fois déployé :
+Sinon, tout en conteneurs :
 
-   ```bash
-   gcloud run services describe task-manager-backend \
-     --region="$REGION" --format='value(status.url)'
-   ```
+```bash
+docker compose up --build
+```
 
-5. **Renseigner `VITE_API_URL`** avec cette URL
-   (ex. `https://task-manager-backend-xxxxx-ew.a.run.app`), puis relancer
-   le workflow (**Actions → Re-run all jobs**) ou pousser un petit commit.
+### 2. Exposer le backend sur Internet
 
-   > C'est indispensable : l'URL du backend est écrite dans le JavaScript
-   > au moment du build du frontend (Vite fige les variables `VITE_*`).
+Le site Firebase est en HTTPS : il faut donc une URL HTTPS publique vers ton
+backend local. Deux solutions gratuites :
 
-6. URLs finales :
+**ngrok (recommandé, URL stable)** — crée un compte sur https://ngrok.com,
+puis dans un second terminal :
 
-   ```bash
-   gcloud run services list --region="$REGION"
-   ```
+```bash
+ngrok config add-authtoken <ton_jeton>
+ngrok http 8081 --url https://<ton-domaine-statique>.ngrok-free.app
+```
 
-L'application est alors accessible sur l'URL du service `task-manager-frontend`.
+ngrok offre **un domaine statique gratuit** par compte : l'URL ne change pas
+après un redémarrage.
 
-## Utilisation au quotidien
+**cloudflared (sans compte, URL aléatoire)** :
 
-- **Pull request** : seuls les jobs `backend` et `frontend` s'exécutent
-  (pas de déploiement).
-- **Push sur `main`** : tests + images + déploiement automatique.
-- Compte créé automatiquement au démarrage du backend
-  (voir `InitializeDataService.java`) : actuellement `nelson` / `12345`.
+```bash
+cloudflared tunnel --url http://localhost:8081
+```
 
-## Tester les images en local (avant de pousser)
+L'URL `https://xxxx.trycloudflare.com` change à chaque lancement : il faut
+alors mettre à jour `VITE_API_URL` et repousser sur `main`.
+
+### 3. Publier le frontend
+
+1. Renseigne `VITE_API_URL` dans GitHub avec l'URL du tunnel.
+2. Pousse sur `main` (ou relance le workflow **Actions → Re-run all jobs**).
+
+Le frontend est alors en ligne sur `https://PROJECT_ID.web.app` et parle à ton
+backend local via le tunnel.
+
+## Tester les images en local
 
 ```bash
 docker compose up --build
@@ -210,51 +161,45 @@ docker compose up --build
 
 Pour tout arrêter : `docker compose down` (ajoutez `-v` pour effacer la base).
 
+## Plus tard : App Engine (avec facturation)
+
+Le dossier `task_manager_backend/app.yaml` et l'ancien job `deploy-backend`
+(présent dans le workflow, marqué `if: false`) sont prêts. Quand tu auras
+activé la facturation :
+
+1. suivre `docs/etape2-ressources-gcp.html` (App Engine + Cloud SQL + secret
+   + rôles) ;
+2. dans `.github/workflows/ci-cd.yml`, remplacer `if: false` par
+   `if: github.event_name == 'push' && github.ref == 'refs/heads/main'` ;
+3. ajouter les variables GitHub `CLOUDSQL_INSTANCE`, `DB_NAME`, `DB_USER` ;
+4. supprimer `VITE_API_URL` : le pipeline récupère alors automatiquement
+   l'URL du backend déployé.
+
 ## Dépannage
 
 | Symptôme | Cause probable | Solution |
 | --- | --- | --- |
-| `Permission 'artifactregistry.repositories.uploadArtifacts' denied` | Rôle manquant sur le compte de service CI | Rejouer l'étape 5 (rôles GCP) |
-| `Permission 'run.services.update' denied` dans Cloud Build | Rôle manquant sur le compte de service Cloud Build | Rejouer l'étape 6 |
-| `secret "db-password" not found` / accès refusé | Secret absent ou `secretAccessor` manquant | Étape 4 + étape 6 |
-| Le backend démarre puis s'arrête : `Access denied for user` | Identifiants MySQL faux | Vérifier `DB_USER` et le secret |
-| Le frontend affiche « Impossible de contacter le serveur » | `VITE_API_URL` vide ou incorrect au moment du build | Étape 5, puis re-déployer |
-| `Cloud SQL connection failed` | Nom d'instance mal formé | Format exact `PROJET:REGION:INSTANCE` |
-| Le déploiement Cloud Build échoue sur `--substitutions` | Variable GitHub manquante | Vérifier le tableau de configuration |
-
-Consulter les logs d'un service :
-
-```bash
-gcloud run services logs read task-manager-backend --region="$REGION" --limit=50
-```
-
-## Nettoyage (éviter les frais)
-
-```bash
-gcloud run services delete task-manager-backend --region="$REGION"
-gcloud run services delete task-manager-frontend --region="$REGION"
-gcloud sql instances delete task-manager-db
-gcloud artifacts repositories delete task-manager --location="$REGION"
-gcloud secrets delete db-password
-```
-
-Les services Cloud Run sont configurés avec `--min-instances=0` : ils ne
-coûtent rien quand personne ne les utilise. La base Cloud SQL, elle, reste
-facturée tant qu'elle existe.
+| Le frontend affiche « Impossible de contacter le serveur » | Tunnel arrêté ou `VITE_API_URL` incorrect | Relancer le backend + le tunnel, corriger `VITE_API_URL`, repousser |
+| Message d'avertissement ngrok dans le navigateur | Page d'interstitiel ngrok | Ajouter l'en-tête `ngrok-skip-browser-warning` (ou utiliser cloudflared) |
+| Erreur CORS | Origine non autorisée | Le backend autorise déjà toutes les origines (voir `ApplicationConfig`) |
+| Firebase : `HTTP Error: 403` | Rôle `firebasehosting.admin` manquant | Rejouer la configuration du compte de service |
+| Firebase : site Hosting introuvable | Firebase pas associé au projet | Rejouer `firebase projects:addfirebase` |
+| Le backend ne démarre pas : `Access denied for user` | MySQL local absent ou mauvais identifiants | Vérifier `application-dev.yml` (root sans mot de passe sur 3306) ou utiliser `docker compose` |
 
 ## Structure du monorepo
 
 ```
 Task Manager/
 ├── .github/workflows/ci-cd.yml    Pipeline GitHub Actions
-├── cloudbuild.yaml                Déploiement Cloud Run
-├── docker-compose.yml             Test local des images
+├── firebase.json                  Configuration Firebase Hosting
+├── docker-compose.yml             Application complète en local
+├── docs/                          Guides (dont ressources GCP)
 ├── task_manager_backend/          API Spring Boot (Java 17)
+│   ├── app.yaml                   Configuration App Engine (plus tard)
 │   ├── Dockerfile
 │   └── src/...
 └── task_manager_frontend/         Application React (Vite)
     ├── Dockerfile
     ├── nginx.conf
-    ├── docs/                      Guide React (PDF)
     └── src/...
 ```

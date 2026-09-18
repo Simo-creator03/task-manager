@@ -31,7 +31,7 @@ RUN npm run build
 # ---------- Étape 2 : serveur nginx ----------
 FROM nginx:1.27-alpine
 
-# Configuration nginx : port 8080 (Cloud Run) + fallback SPA + cache des assets.
+# Configuration nginx : port 8080 + fallback SPA + cache des assets.
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Les fichiers statiques générés par Vite.

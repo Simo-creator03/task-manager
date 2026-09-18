@@ -10,8 +10,10 @@ spring:
     hikari:
       poolName: Hikari
       connection-timeout: 180000
-      minimum-idle: 10
-      maximum-pool-size: 50
+      # Pool réduit pour App Engine (instances éphémères) :
+      # 2 instances max x 10 connexions restent sous la limite Cloud SQL.
+      minimum-idle: 1
+      maximum-pool-size: 10
       idle-timeout: 300000
       max-lifetime: 900000
       validation-timeout: 50000
@@ -40,7 +42,7 @@ logging:
     com.zaxxer.hikari: INFO
 
 server:
-  # Cloud Run impose le port via la variable PORT (8080 par defaut).
+  # App Engine fournit le port via la variable PORT (8080).
   # En local, on garde 8081.
   port: ${PORT:8081}
   servlet:

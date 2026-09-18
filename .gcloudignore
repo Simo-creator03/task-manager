@@ -1,9 +1,0 @@
-# ============================================================
-# Fichiers envoyés à Cloud Build lors de "gcloud builds submit".
-# Le déploiement n'a besoin que du fichier cloudbuild.yaml :
-# les images Docker sont déjà construites et poussées par
-# GitHub Actions. On exclut donc tout le reste (upload minimal).
-# ============================================================
-
-*
-!cloudbuild.yaml

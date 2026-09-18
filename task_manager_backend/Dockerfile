@@ -34,7 +34,7 @@ USER app
 # Le jar Spring Boot (le fichier *.jar.original est exclu par le motif *.jar).
 COPY --from=build /app/target/*.jar app.jar
 
-# Cloud Run fournit le port via la variable PORT (voir application-prod.yml).
+# La variable PORT permet d'adapter le port (docker-compose la fixe a 8080).
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

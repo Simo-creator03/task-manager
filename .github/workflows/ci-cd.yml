@@ -4,13 +4,12 @@
 # Déroulé :
 #   1. backend  : compilation + tests (Maven, base H2 en mémoire)
 #   2. frontend : lint + build de vérification (Vite)
-#   3. images   : construction des images Docker + push vers
-#                 Artifact Registry   (uniquement sur la branche main)
-#   4. déploiement : Cloud Build met à jour les deux services
-#                    Cloud Run avec les nouvelles images (cloudbuild.yaml)
+#   3. déploiement (uniquement sur la branche main) :
+#        - frontend : Firebase Hosting (gratuit)
+#        - backend  : job App Engine désactivé (facturation GCP requise)
 #
-# Les étapes 3 et 4 ne s'exécutent que sur un push vers "main",
-# pas sur les pull requests.
+# Le backend tourne en local et est exposé par un tunnel ; son URL
+# est fournie au build du frontend via la variable VITE_API_URL.
 # ============================================================
 
 name: CI/CD Task Manager
@@ -21,12 +20,8 @@ on:
   pull_request:
     branches: [main]
 
-# Valeurs communes à tous les jobs (adaptables ici).
+# Valeurs communes à tous les jobs.
 env:
-  REGION: europe-west1
-  ARTIFACT_REPOSITORY: task-manager
-  BACKEND_SERVICE: task-manager-backend
-  FRONTEND_SERVICE: task-manager-frontend
   JAVA_VERSION: '17'
   NODE_VERSION: '22'
 
@@ -88,16 +83,20 @@ jobs:
         run: npm run build
 
   # ----------------------------------------------------------
-  # 3) IMAGES DOCKER + 4) DÉPLOIEMENT (branche main uniquement)
-  #    - authentification GCP via le secret GCP_SA_KEY
-  #    - build et push des images vers Artifact Registry
-  #    - appel de Cloud Build pour déployer sur Cloud Run
+  # 3) BACKEND -> APP ENGINE (DÉSACTIVÉ)
+  #    App Engine et Cloud SQL exigent un compte de facturation
+  #    GCP. En attendant, le backend tourne en local et est exposé
+  #    par un tunnel (voir README). Pour réactiver : remplacez
+  #    "if: false" par la condition d'origine, activez la
+  #    facturation et recréez les ressources (docs/etape2...).
   # ----------------------------------------------------------
-  deploy:
-    name: Docker + déploiement Cloud Run
-    needs: [backend, frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  deploy-backend:
+    name: Déploiement backend — App Engine (désactivé)
+    needs: backend
+    if: false
     runs-on: ubuntu-latest
+    outputs:
+      backend_url: ${{ steps.url.outputs.backend_url }}
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
@@ -110,42 +109,86 @@ jobs:
       - name: Installer gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Autoriser Docker à pousser vers Artifact Registry
-        run: gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev" --quiet
-
-      - name: Construire et pousser l'image backend
-        env:
-          IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.BACKEND_SERVICE }}
-        run: |
-          docker build -t "$IMAGE:${{ github.sha }}" -t "$IMAGE:latest" ./task_manager_backend
-          docker push "$IMAGE:${{ github.sha }}"
-          docker push "$IMAGE:latest"
-
-      - name: Construire et pousser l'image frontend
-        env:
-          IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.FRONTEND_SERVICE }}
-          # ATTENTION : l'URL du backend est figée dans le bundle au moment du build.
-          API_URL: ${{ vars.VITE_API_URL }}
-        run: |
-          docker build \
-            --build-arg "VITE_API_URL=$API_URL" \
-            -t "$IMAGE:${{ github.sha }}" \
-            -t "$IMAGE:latest" \
-            ./task_manager_frontend
-          docker push "$IMAGE:${{ github.sha }}"
-          docker push "$IMAGE:latest"
-
-      - name: Déployer sur Cloud Run (via Cloud Build)
+      - name: Générer la configuration App Engine
         env:
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           CLOUDSQL_INSTANCE: ${{ vars.CLOUDSQL_INSTANCE }}
           DB_NAME: ${{ vars.DB_NAME || 'task_manager' }}
           DB_USER: ${{ vars.DB_USER || 'task_manager' }}
-          BACKEND_IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }}
-          FRONTEND_IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
         run: |
-          gcloud builds submit \
-            --project="$PROJECT_ID" \
-            --config cloudbuild.yaml \
-            --substitutions="_BACKEND_IMAGE=$BACKEND_IMAGE,_FRONTEND_IMAGE=$FRONTEND_IMAGE,_REGION=$REGION,_CLOUDSQL_INSTANCE=$CLOUDSQL_INSTANCE,_DB_NAME=$DB_NAME,_DB_USER=$DB_USER" \
-            .
+          DB_PASSWORD="$(gcloud secrets versions access latest --secret=db-password --project="$PROJECT_ID")"
+          export DB_PASSWORD
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          config = pathlib.Path("task_manager_backend/app.yaml").read_text(encoding="utf-8")
+          for token, variable in {
+              "__CLOUDSQL_INSTANCE__": "CLOUDSQL_INSTANCE",
+              "__DB_NAME__": "DB_NAME",
+              "__DB_USER__": "DB_USER",
+          }.items():
+              config = config.replace(token, os.environ[variable])
+          config = config.replace("__DB_PASSWORD__", json.dumps(os.environ["DB_PASSWORD"]))
+          pathlib.Path("/tmp/app-engine.yaml").write_text(config, encoding="utf-8")
+          PY
+
+      - name: Déployer sur App Engine
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        working-directory: task_manager_backend
+        run: gcloud app deploy --project="$PROJECT_ID" --appyaml=/tmp/app-engine.yaml --quiet
+
+      - name: Récupérer l'URL publique du backend
+        id: url
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          HOSTNAME="$(gcloud app describe --project="$PROJECT_ID" --format='value(defaultHostname)')"
+          echo "backend_url=https://$HOSTNAME" >> "$GITHUB_OUTPUT"
+
+  # ----------------------------------------------------------
+  # 4) FRONTEND -> FIREBASE HOSTING (branche main uniquement)
+  #    Firebase Hosting est gratuit (offre Spark), aucune
+  #    facturation nécessaire. VITE_API_URL doit pointer vers
+  #    le backend exposé par le tunnel (voir README).
+  # ----------------------------------------------------------
+  deploy-frontend:
+    name: Déploiement frontend — Firebase Hosting
+    needs: frontend
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: task_manager_frontend/package-lock.json
+
+      - name: Installer les dépendances
+        working-directory: task_manager_frontend
+        run: npm ci
+
+      - name: Build du frontend
+        working-directory: task_manager_frontend
+        env:
+          # URL du backend exposée par le tunnel (Vite fige VITE_*).
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'http://localhost:8081' }}
+        run: npm run build
+
+      - name: Authentification auprès de Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Déployer sur Firebase Hosting
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          npm install --global firebase-tools
+          firebase deploy --only hosting --project "$PROJECT_ID" --non-interactive
