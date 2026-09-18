@@ -1,4 +1,3 @@
-# Fichiers exclus du contexte Docker (envoi plus rapide, cache plus efficace)
 node_modules/
 dist/
 .idea/

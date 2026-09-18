@@ -1,6 +1,5 @@
 package com.example.task_manager_backend.bean;
 
-
 import com.example.task_manager_backend.domain.enumeration.TaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;

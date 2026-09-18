@@ -1,15 +1,3 @@
-/**
- * FENÊTRE MODALE DE CRÉATION / MODIFICATION D'UNE TÂCHE
- *
- * Le même composant sert pour les deux cas :
- *   - prop "task" à null  -> création ("Nouvelle tâche") ;
- *   - prop "task" remplie -> modification ("Modifier la tâche").
- *
- * Notions illustrées ici :
- *   - les "formulaires contrôlés" (la valeur vient de l'état React) ;
- *   - useEffect pour écouter la touche Échap, avec nettoyage ;
- *   - la soumission asynchrone et l'affichage des erreurs du backend.
- */
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ApiError } from '../api/client';
@@ -17,26 +5,22 @@ import type { Task, TaskPayload, TaskStatus } from '../types';
 import { STATUS_OPTIONS } from '../utils/task';
 
 interface TaskFormModalProps {
-  /** La tâche à modifier, ou null pour une création. */
+
   task: Task | null;
-  /** Appelée pour fermer la fenêtre. */
+
   onClose: () => void;
-  /** Appelée à la soumission ; le parent enregistre et peut lever une erreur. */
+
   onSubmit: (payload: TaskPayload) => Promise<void>;
 }
 
 export function TaskFormModal({ task, onClose, onSubmit }: TaskFormModalProps) {
-  // Un état par champ du formulaire. "task?.title" signifie : le titre de la
-  // tâche si elle existe, sinon rien (?? '' remplace null par une chaîne vide).
+
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'TODO');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Fermer la fenêtre avec la touche Échap.
-  // La fonction retournée par useEffect est le "nettoyage" : React la lance
-  // quand le composant disparaît (sinon l'écouteur resterait en mémoire).
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -48,12 +32,10 @@ export function TaskFormModal({ task, onClose, onSubmit }: TaskFormModalProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  /** Soumission du formulaire. */
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    // Empêche le navigateur de recharger la page (comportement natif d'un form).
+
     event.preventDefault();
 
-    // Petite validation locale avant d'appeler le serveur.
     if (title.trim() === '') {
       setError('Veuillez renseigner le titre de la tâche');
       return;
@@ -63,11 +45,11 @@ export function TaskFormModal({ task, onClose, onSubmit }: TaskFormModalProps) {
     setError(null);
 
     try {
-      // Le parent effectue l'appel API ; s'il échoue, l'erreur est attrapée ici.
+
       await onSubmit({ title: title.trim(), description: description.trim(), status });
     } catch (submitError) {
       if (submitError instanceof ApiError) {
-        // On affiche les erreurs de validation du backend si elles existent.
+
         setError(submitError.errors?.join(', ') ?? submitError.message);
       } else {
         setError('Une erreur est survenue');
@@ -77,8 +59,7 @@ export function TaskFormModal({ task, onClose, onSubmit }: TaskFormModalProps) {
   };
 
   return (
-    // Clic sur le fond sombre : on ferme. Clic dans la boîte : stopPropagation
-    // empêche la fermeture.
+
     <div className="modal" onMouseDown={onClose}>
       <div className="modal__dialog" onMouseDown={(event) => event.stopPropagation()}>
         <h2 className="modal__title">{task ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
@@ -86,10 +67,7 @@ export function TaskFormModal({ task, onClose, onSubmit }: TaskFormModalProps) {
         {error && <div className="alert alert--error">{error}</div>}
 
         <form className="form" onSubmit={handleSubmit}>
-          {/*
-            Formulaire "contrôlé" : value = état React, onChange = mise à jour
-            de cet état. C'est l'équivalent de [(ngModel)] en Angular.
-          */}
+          { }
           <div className="field">
             <label htmlFor="task-title">Titre</label>
             <input
@@ -119,7 +97,7 @@ export function TaskFormModal({ task, onClose, onSubmit }: TaskFormModalProps) {
             <select
               id="task-status"
               value={status}
-              // event.target.value est une string : on la convertit en TaskStatus.
+
               onChange={(event) => setStatus(event.target.value as TaskStatus)}
             >
               {STATUS_OPTIONS.map((option) => (

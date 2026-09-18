@@ -57,5 +57,4 @@ public class MessageNotification {
         this.id = id;
     }
 
-
 }

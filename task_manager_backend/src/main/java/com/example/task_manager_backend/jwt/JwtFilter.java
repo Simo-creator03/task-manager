@@ -1,6 +1,5 @@
 package com.example.task_manager_backend.jwt;
 
-
 import com.example.task_manager_backend.service.login.ApplicationLoginService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
@@ -25,13 +24,11 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final ApplicationLoginService applicationLoginService;
 
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // Vérification si le authHeader est null
         if (Strings.isEmpty(authHeader) || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -42,10 +39,9 @@ public class JwtFilter extends OncePerRequestFilter {
             String username = jwtUtil.extractUsername(jwt);
 
             if (StringUtils.hasLength(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // Récupération de l'utilisateur
+
                 UserDetails userDetails = applicationLoginService.loadUserByUsername(username);
 
-                // Vérification que le token appartient à l'utilisateur connecté
                 if (Boolean.TRUE.equals(jwtUtil.validateToken(jwt, userDetails))) {
                     UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()

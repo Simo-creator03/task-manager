@@ -12,7 +12,6 @@ import java.util.stream.Stream;
 
 public class SecurityUtils {
 
-
     public static String getCurrentUserLogin() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         Optional<String> currentUserLogin = Optional.ofNullable(extractPrincipal(securityContext.getAuthentication()));
@@ -40,7 +39,6 @@ public class SecurityUtils {
         return null;
     }
 
-
     public static boolean isAuthenticated() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null
@@ -48,7 +46,6 @@ public class SecurityUtils {
                 && !(authentication.getPrincipal() instanceof String
                 && "anonymousUser".equals(authentication.getPrincipal()));
     }
-
 
     public static boolean hasCurrentUserThisAuthority(String authority) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

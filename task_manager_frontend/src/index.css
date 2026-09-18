@@ -68,7 +68,6 @@ a:hover {
   padding: 0 20px;
 }
 
-/* Boutons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -131,7 +130,6 @@ a:hover {
   width: 100%;
 }
 
-/* Formulaires */
 .form {
   display: flex;
   flex-direction: column;
@@ -183,7 +181,6 @@ a:hover {
   color: var(--muted);
 }
 
-/* Alertes */
 .alert {
   border-radius: 10px;
   padding: 12px 14px;

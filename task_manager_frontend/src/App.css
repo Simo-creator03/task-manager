@@ -4,7 +4,6 @@
   flex-direction: column;
 }
 
-/* Barre de navigation */
 .navbar {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -57,7 +56,6 @@
   color: var(--muted);
 }
 
-/* Page */
 .page {
   padding: 32px 20px 48px;
   display: flex;
@@ -85,7 +83,6 @@
   font-size: 14px;
 }
 
-/* Filtres */
 .filters {
   display: flex;
   gap: 8px;
@@ -118,7 +115,6 @@
   color: #fff;
 }
 
-/* Tâches */
 .tasks {
   display: grid;
   gap: 16px;
@@ -180,7 +176,6 @@
   gap: 8px;
 }
 
-/* Badges de statut */
 .badge {
   font-size: 12px;
   font-weight: 700;
@@ -204,7 +199,6 @@
   background: var(--success-soft);
 }
 
-/* États */
 .state {
   padding: 40px 20px;
   text-align: center;
@@ -222,7 +216,6 @@
   border-radius: var(--radius);
 }
 
-/* Authentification */
 .auth {
   min-height: 100svh;
   display: flex;
@@ -285,7 +278,6 @@
   color: var(--muted);
 }
 
-/* Modale */
 .modal {
   position: fixed;
   inset: 0;

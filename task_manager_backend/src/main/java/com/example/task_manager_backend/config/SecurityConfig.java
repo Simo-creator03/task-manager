@@ -1,6 +1,5 @@
 package com.example.task_manager_backend.config;
 
-
 import com.example.task_manager_backend.jwt.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +15,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
 
     private final JwtFilter jwtFilter;
     private final AuthenticationProvider authenticationProvider;

@@ -1,6 +1,5 @@
 package com.example.task_manager_backend.bean;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

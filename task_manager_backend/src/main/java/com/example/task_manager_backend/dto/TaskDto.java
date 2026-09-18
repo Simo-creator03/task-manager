@@ -1,6 +1,5 @@
 package com.example.task_manager_backend.dto;
 
-
 import com.example.task_manager_backend.domain.enumeration.TaskStatus;
 import lombok.*;
 

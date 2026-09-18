@@ -1,10 +1,3 @@
-/**
- * PAGE D'INSCRIPTION (/register)
- *
- * Même structure que LoginPage, avec deux différences :
- *   - cinq champs au lieu de deux ;
- *   - une validation locale complète avant l'appel au serveur.
- */
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
@@ -14,13 +7,13 @@ import { useAuth } from '../context/AuthContext';
 import { isValidCameroonPhone, isValidEmail } from '../utils/validation';
 
 export function RegisterPage() {
-  // Un état par champ du formulaire.
+
   const [nom, setNom] = useState('');
   const [loginValue, setLoginValue] = useState('');
   const [email, setEmail] = useState('');
   const [telephone, setTelephone] = useState('');
   const [password, setPassword] = useState('');
-  // Ici l'état est un TABLEAU d'erreurs (le backend peut en renvoyer plusieurs).
+
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -31,10 +24,6 @@ export function RegisterPage() {
     return <Navigate to="/tasks" replace />;
   }
 
-  /**
-   * Vérifie les champs AVANT d'envoyer au serveur.
-   * Retourne la liste des problèmes trouvés (vide si tout est bon).
-   */
   const validate = (): string[] => {
     const validationErrors: string[] = [];
 
@@ -60,7 +49,6 @@ export function RegisterPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // 1) Validation locale.
     const validationErrors = validate();
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
@@ -70,7 +58,6 @@ export function RegisterPage() {
     setLoading(true);
     setErrors([]);
 
-    // 2) Appel du backend. Il revalide tout de son côté (sécurité).
     try {
       const response = await registerRequest({
         nom: nom.trim(),
@@ -79,11 +66,11 @@ export function RegisterPage() {
         email: email.trim(),
         telephone: telephone.trim(),
       });
-      // Inscription réussie : l'utilisateur est connecté directement.
+
       signIn(response.accessToken, loginValue.trim());
       navigate('/tasks', { replace: true });
     } catch (registerError) {
-      // Erreurs du backend : ex. "Ce login est déjà utilisé".
+
       if (registerError instanceof ApiError) {
         setErrors(registerError.errors ?? [registerError.message]);
       } else {
@@ -102,7 +89,7 @@ export function RegisterPage() {
           <p className="auth__subtitle">Créez votre compte pour gérer vos tâches</p>
         </div>
 
-        {/* On n'affiche le bloc d'erreurs que s'il y en a. */}
+        { }
         {errors.length > 0 && (
           <div className="alert alert--error">
             <ul>

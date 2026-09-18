@@ -1,6 +1,5 @@
 package com.example.task_manager_backend.controller.api;
 
-
 import com.example.task_manager_backend.bean.AuthenticationRequestBean;
 import com.example.task_manager_backend.bean.AuthenticationResponseBean;
 import com.example.task_manager_backend.bean.UserSaveBean;

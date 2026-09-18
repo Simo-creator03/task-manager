@@ -1,24 +1,14 @@
-# ============================================================
-# Fichier .gitignore du monorepo (racine "Task Manager")
-# Les dossiers backend et frontend ont en plus leurs propres
-# règles (.gitignore locaux).
-# ============================================================
-
-# Dépendances et artefacts de build
 **/node_modules/
 **/dist/
 **/target/
 
-# IDE
 .idea/
 *.iml
 .vscode/
 
-# Variables d'environnement (ne jamais committer de secrets)
 .env
 .env.*
 !.env.example
 
-# Divers
 .DS_Store
 Thumbs.db

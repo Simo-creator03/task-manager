@@ -1,25 +1,18 @@
-/**
- * CARTE D'UNE TÂCHE
- *
- * Affiche une tâche et prévient le parent via les fonctions onEdit / onDelete
- * (communication enfant -> parent, l'équivalent de @Output en Angular).
- */
 import type { Task } from '../types';
 import { formatDateTime } from '../utils/task';
 import { StatusBadge } from './StatusBadge';
 
 interface TaskItemProps {
-  /** La tâche à afficher. */
+
   task: Task;
-  /** Appelée avec la tâche quand on clique sur "Modifier". */
+
   onEdit: (task: Task) => void;
-  /** Appelée avec la tâche quand on clique sur "Supprimer". */
+
   onDelete: (task: Task) => void;
 }
 
 export function TaskItem({ task, onEdit, onDelete }: TaskItemProps) {
-  // Classe conditionnelle : on ajoute "task--done" si la tâche est terminée
-  // (le CSS barre alors le titre).
+
   const articleClassName = `task ${task.status === 'DONE' ? 'task--done' : ''}`;
 
   return (
@@ -29,7 +22,6 @@ export function TaskItem({ task, onEdit, onDelete }: TaskItemProps) {
         <StatusBadge status={task.status} />
       </div>
 
-      {/* La description n'est affichée que si elle existe. */}
       {task.description && <p className="task__description">{task.description}</p>}
 
       <div className="task__footer">
